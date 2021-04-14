@@ -1,71 +1,88 @@
-cabal-version:       2.4
-name:                Discord
-version:             0.0.0.0
-synopsis:            Discord Library
-description:         Discord Library
-homepage:            https://github.com/Reyu/Discord
-bug-reports:         https://github.com/Reyu/Discord/issues
-license:             MIT
-license-file:        LICENSE
-author:              Reyu Zenfold
-maintainer:          Reyu Zenfold <reyu@reyuzenfold.com>
-copyright:           2021 Reyu Zenfold
-category:            Web
-build-type:          Simple
-extra-doc-files:     README.md
-                     CHANGELOG.md
-tested-with:         GHC == 8.8.3
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           Discord
+version:        0.0.0.0
+description:    Please see the README on GitHub at <https://github.com/BlackFoxCode/Discord#readme>
+homepage:       https://github.com/BlackFoxCode/Discord#readme
+bug-reports:    https://github.com/BlackFoxCode/Discord/issues
+author:         Tim Millican
+maintainer:     reyu@reyuzenfold.com
+copyright:      2021 Tim Millican
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
 
 source-repository head
-  type:                git
-  location:            https://github.com/Reyu/Discord.git
-
-common common-options
-  build-depends:       base ^>= 4.13.0.0
-                     , relude
-  
-  mixins:              base hiding (Prelude)
-                     , relude (Relude as Prelude)
-  
-  ghc-options:         -Wall
-                       -Wcompat
-                       -Widentities
-                       -Wincomplete-uni-patterns
-                       -Wincomplete-record-updates
-  if impl(ghc >= 8.0)
-    ghc-options:       -Wredundant-constraints
-  if impl(ghc >= 8.2)
-    ghc-options:       -fhide-source-paths
-  if impl(ghc >= 8.4)
-    ghc-options:       -Wmissing-export-lists
-                       -Wpartial-fields
-  if impl(ghc >= 8.8)
-    ghc-options:       -Wmissing-deriving-strategies
-
-  default-language:    Haskell2010
+  type: git
+  location: https://github.com/BlackFoxCode/Discord
 
 library
-  import:              common-options
-  hs-source-dirs:      src
-  exposed-modules:     Discord
+  exposed-modules:
+      Discord
+      Discord.Gateway
+      Discord.Gateway.Exceptions
+      Discord.Gateway.Types
+      Discord.Gateway.Types.Messages
+      Prelude
+  other-modules:
+      Paths_Discord
+  hs-source-dirs:
+      src
+  ghc-options: -Werror -Wall -Wcompat -Wincomplete-uni-patterns -Widentities
+  build-depends:
+      aeson
+    , async
+    , base-noprelude >=4.7 && <5
+    , bytestring
+    , lens
+    , network
+    , relude
+    , req
+    , safe-exceptions >=0.1.7.1 && <1
+    , scientific
+    , stm
+    , text
+    , websockets >=0.12.7.2 && <1
+    , wuss
+  default-language: Haskell2010
 
-test-suite Discord-test
-  import:              common-options
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      test
-  main-is:             Spec.hs
-  build-depends:       Discord
-  ghc-options:         -threaded
-                       -rtsopts
-                       -with-rtsopts=-N
-
-benchmark Discord-benchmark
-  import:              common-options
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      benchmark
-  main-is:             Main.hs
-  build-depends:       gauge
-                     , Discord
-  ghc-options:         -threaded
-                       -rtsopts
-                       -with-rtsopts=-N
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Discord
+      Discord.Gateway
+      Discord.Gateway.Exceptions
+      Discord.Gateway.Types
+      Discord.Gateway.Types.Messages
+      Prelude
+      Paths_Discord
+  hs-source-dirs:
+      test
+      src
+  ghc-options: -Werror -Wall -Wcompat -Wincomplete-uni-patterns -Widentities -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , async
+    , base-noprelude >=4.7 && <5
+    , bytestring
+    , hspec
+    , hspec-core
+    , lens
+    , network
+    , relude
+    , req
+    , safe-exceptions >=0.1.7.1 && <1
+    , scientific
+    , stm
+    , text
+    , websockets >=0.12.7.2 && <1
+    , wuss
+  default-language: Haskell2010

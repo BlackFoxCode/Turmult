@@ -1,0 +1,65 @@
+spec-version:        0.31.0
+name:                Discord
+version:             0.0.0.0
+github:              "BlackFoxCode/Discord"
+license:             MIT
+author:              "Tim Millican"
+maintainer:          "reyu@reyuzenfold.com"
+copyright:           "2021 Tim Millican"
+
+extra-source-files:
+- README.md
+- CHANGELOG.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description: Please see the README on GitHub at <https://github.com/BlackFoxCode/Discord#readme>
+
+ghc-options: -Werror -Wall -Wcompat -Wincomplete-uni-patterns -Widentities
+
+dependencies:
+- base-noprelude >= 4.7 && < 5
+- relude
+- aeson # json
+- bytestring
+- text
+- websockets >= 0.12.7.2 && < 1
+- safe-exceptions >= 0.1.7.1 && < 1
+- req
+- lens
+- scientific
+- network
+- wuss
+- stm
+- async
+
+library:
+  source-dirs: src
+
+tests:
+  # hlint:
+  #   main: hlint.hs
+  #   source-dirs:
+  #   - test
+  #   dependencies:
+  #   - base
+  #   - hlint
+  spec:
+    main: Spec.hs
+    source-dirs:
+    - test
+    # including extra source dirs allows ghcid to watch
+    - src
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - hspec
+    - hspec-core
+    - lens
