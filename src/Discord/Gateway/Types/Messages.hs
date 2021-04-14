@@ -28,31 +28,21 @@ module Discord.Gateway.Types.Messages
   , Hello(..)
   , Properties(..)
   , Shard(..)
-  , Activity(..)
-  , ActivityType(..)
-  , Timestamps(..)
-  , ActivityEmoji(..)
-  , ActivityParty(..)
-  , PartySize(..)
-  , ActivityAssets(..)
-  , ActivitySecrets(..)
   , StatusType(..)
   , GatewayIntents(..)
   , defaultIntents
   , Ready(..)
-  )
-where
+  ) where
 
+import           Discord.Types
 import           Discord.Gateway.Exceptions     ( GatewayException(..) )
 
 import           Control.Exception.Safe         ( impureThrow )
 import           Control.Lens
 import           Data.Aeson
-import           Data.Bits                      ( shift
-                                                , testBit
-                                                )
+import           Data.Bits                      ( shift, testBit )
 import           Data.Maybe                     ( fromJust )
-import           Data.Scientific                ( toBoundedInteger )
+import           Data.Scientific ( toBoundedInteger )
 import           Network.WebSockets
 
 myDefaultOptions :: Options
@@ -66,7 +56,8 @@ data Payload = Payload
   , _payload_d  :: Maybe Value     -- ^ event data
   , _payload_s  :: Maybe Integer   -- ^ sequence number, used for resuming sessions and heartbeats
   , _payload_t  :: Maybe Text      -- ^ the event name for this payload
-  } deriving stock (Generic, Show)
+  }
+  deriving stock (Generic, Show)
 instance FromJSON Payload where
   parseJSON = withObject "payload" $ \o -> Payload <$> o .: "op" <*> o .:? "d" <*> o .:? "s" <*> o .:? "t"
 instance ToJSON Payload where
@@ -78,13 +69,6 @@ instance WebSocketsData Payload where
   toLazyByteString   = encode
 $(makeLenses ''Payload)
 
-{- | Discord utilizes Twitter's snowflake format for uniquely identifiable
- -  descriptors (IDs). These IDs are guaranteed to be unique across all of
- -  Discord, except in some unique scenarios in which child objects share their
- -  parent's ID.
- -}
-type Snowflake = Text
-
 {- | Opcode 0 Dispatch: Receive - An event was dispatched.
  - This is encoded as one of the event payloads defined further down
  -}
@@ -94,15 +78,16 @@ type Heartbeat = Maybe Int
 
 -- | Opcode 2 Identify: Send - Starts a new session during the initial handshake.
 data Identify = Identify
-    { _identify_token               :: Text            -- ^ authentication token
-    , _identify_properties          :: Properties      -- ^ connection properties
-    , _identify_compress            :: Maybe Bool      -- ^ whether this connection supports compression of packets - Default: False
-    , _identify_large_threshold     :: Maybe Int       -- ^ value between 50 and 250, total number of members where the gateway will stop sending offline members in the guild member list
-    , _identify_shard               :: Maybe Shard     -- ^ used for Guild Sharding
-    , _identify_presence            :: Maybe Presence  -- ^ presence structure for initial presence information
-    , _identify_guild_subscriptions :: Maybe Bool      -- ^ enables dispatching of guild subscription events (presence and typing events)
-    , _identify_intents             :: GatewayIntents  -- ^ the Gateway Intents you wish to receive
-    } deriving stock (Generic, Show)
+  { _identify_token               :: Text            -- ^ authentication token
+  , _identify_properties          :: Properties      -- ^ connection properties
+  , _identify_compress            :: Maybe Bool      -- ^ whether this connection supports compression of packets - Default: False
+  , _identify_large_threshold     :: Maybe Int       -- ^ value between 50 and 250, total number of members where the gateway will stop sending offline members in the guild member list
+  , _identify_shard               :: Maybe Shard     -- ^ used for Guild Sharding
+  , _identify_presence            :: Maybe Presence  -- ^ presence structure for initial presence information
+  , _identify_guild_subscriptions :: Maybe Bool      -- ^ enables dispatching of guild subscription events (presence and typing events)
+  , _identify_intents             :: GatewayIntents  -- ^ the Gateway Intents you wish to receive
+  }
+  deriving stock (Generic, Show)
 instance FromJSON Identify where
   parseJSON = genericParseJSON myDefaultOptions { fieldLabelModifier = drop 10 }
 instance ToJSON Identify where
@@ -110,11 +95,12 @@ instance ToJSON Identify where
 
 -- | Opcode 3 Presence Update: Send - Update the client's presence.
 data Presence = Presence
-    { _presence_since      :: Maybe Int  -- ^ unix time (in milliseconds) of when the client went idle, or null if the client is not idle
-    , _presence_activities :: [Activity] -- ^ null, or the user's activities
-    , _presence_status     :: StatusType -- ^ the user's new status
-    , _presence_afk        :: Bool       -- ^ whether or not the client is afk
-    } deriving stock (Generic, Show)
+  { _presence_since      :: Maybe Int  -- ^ unix time (in milliseconds) of when the client went idle, or null if the client is not idle
+  , _presence_activities :: [Activity] -- ^ null, or the user's activities
+  , _presence_status     :: StatusType -- ^ the user's new status
+  , _presence_afk        :: Bool       -- ^ whether or not the client is afk
+  }
+  deriving stock (Generic, Show)
 instance FromJSON Presence where
   parseJSON = genericParseJSON myDefaultOptions { fieldLabelModifier = drop 9 }
 instance ToJSON Presence where
@@ -122,10 +108,11 @@ instance ToJSON Presence where
 
 -- | Opcode 4 Voice State Update: Send - Used to join/leave or move between voice channels.
 data VoiceStateUpdate = VoiceStateUpdate
-    { _voice_state_update_token    :: Text      -- ^ voice connection token
-    , _voice_state_update_guild_id :: Snowflake -- ^ the guild this voice server update is for
-    , _voice_state_update_endpoint :: Text      -- ^ the voice server host
-    } deriving stock (Generic, Show)
+  { _voice_state_update_token    :: Text      -- ^ voice connection token
+  , _voice_state_update_guild_id :: Snowflake -- ^ the guild this voice server update is for
+  , _voice_state_update_endpoint :: Text      -- ^ the voice server host
+  }
+  deriving stock (Generic, Show)
 instance FromJSON VoiceStateUpdate where
   parseJSON = genericParseJSON myDefaultOptions { fieldLabelModifier = drop 20 }
 instance ToJSON VoiceStateUpdate where
@@ -133,10 +120,11 @@ instance ToJSON VoiceStateUpdate where
 
 -- | Opcode 6 Resume: Send - Resume a previous session that was disconnected.
 data Resume = Resume
-    { _resume_token      :: Text -- ^ session token
-    , _resume_session_id :: Text -- ^ session id
-    , _resume_seq        :: Int  -- ^ last sequence number received
-    } deriving stock (Generic, Show)
+  { _resume_token      :: Text -- ^ session token
+  , _resume_session_id :: Text -- ^ session id
+  , _resume_seq        :: Int  -- ^ last sequence number received
+  }
+  deriving stock (Generic, Show)
 instance FromJSON Resume where
   parseJSON = genericParseJSON myDefaultOptions { fieldLabelModifier = drop 8 }
 instance ToJSON Resume where
@@ -149,13 +137,14 @@ type Reconnect = Bool
 
 -- | Opcode 8 Request Guild Members: Send - Request information about offline guild members in a large guild.
 data RequestGuildMembers = RequestGuildMembers
-    { _request_guild_members_guild_id  :: Snowflake         -- ^ id of the guild to get members for
-    , _request_guild_members_query     :: Maybe Text        -- ^ Text that username starts with, or an empty Text to return all members
-    , _request_guild_members_limit     :: Int               -- ^ maximum number of members to send matching the query; a limit of 0 can be used with an empty Text query to return all members
-    , _request_guild_members_presences :: Maybe Bool        -- ^ used to specify if we want the presences of the matched members
-    , _request_guild_members_user_ids  :: Maybe [Snowflake] -- ^ used to specify which users you wish to fetch
-    , _request_guild_members_nonce     :: Maybe Text        -- ^ nonce to identify the Guild Members Chunk response
-    } deriving stock (Generic, Show)
+  { _request_guild_members_guild_id  :: Snowflake         -- ^ id of the guild to get members for
+  , _request_guild_members_query     :: Maybe Text        -- ^ Text that username starts with, or an empty Text to return all members
+  , _request_guild_members_limit     :: Int               -- ^ maximum number of members to send matching the query; a limit of 0 can be used with an empty Text query to return all members
+  , _request_guild_members_presences :: Maybe Bool        -- ^ used to specify if we want the presences of the matched members
+  , _request_guild_members_user_ids  :: Maybe [Snowflake] -- ^ used to specify which users you wish to fetch
+  , _request_guild_members_nonce     :: Maybe Text        -- ^ nonce to identify the Guild Members Chunk response
+  }
+  deriving stock (Generic, Show)
 instance FromJSON RequestGuildMembers where
   parseJSON = genericParseJSON myDefaultOptions { fieldLabelModifier = drop 23 }
 instance ToJSON RequestGuildMembers where
@@ -180,10 +169,11 @@ instance ToJSON Hello where
 
 -- | Connection Properties
 data Properties = Properties
-    { _properties_os      :: Text -- ^ your operating system
-    , _properties_browser :: Text -- ^ your library name
-    , _properties_device  :: Text -- ^ your library name
-    } deriving stock (Generic, Show)
+  { _properties_os      :: Text -- ^ your operating system
+  , _properties_browser :: Text -- ^ your library name
+  , _properties_device  :: Text -- ^ your library name
+  }
+  deriving stock (Generic, Show)
 instance FromJSON Properties where
   parseJSON = genericParseJSON myDefaultOptions { fieldLabelModifier = drop 12 }
 instance ToJSON Properties where
@@ -191,115 +181,14 @@ instance ToJSON Properties where
 
 -- | Shard Identifier
 data Shard = Shard
-    { _shard_id  :: Int -- ^ Shard ID
-    , _shard_num :: Int -- ^ Number of shards
-    } deriving stock (Generic, Show)
+  { _shard_id  :: Int -- ^ Shard ID
+  , _shard_num :: Int -- ^ Number of shards
+  }
+  deriving stock (Generic, Show)
 instance FromJSON Shard where
   parseJSON = genericParseJSON myDefaultOptions { fieldLabelModifier = drop 6 }
 instance ToJSON Shard where
   toJSON = genericToJSON myDefaultOptions { fieldLabelModifier = drop 6 }
-
-data Activity = Activity
-    { _activity_name           :: Text                  -- ^ the activity's name
-    , _activity_type           :: ActivityType          -- ^ activity type
-    , _activity_url            :: Maybe Text            -- ^ stream url, is validated when type is 1
-    , _activity_created_at     :: Int                   -- ^ unix timestamp of when the activity was added to the user's session
-    , _activity_timestamps     :: Maybe Timestamps      -- ^ timestamps for start and/or end of the game
-    , _activity_application_id :: Maybe Snowflake       -- ^ application id for the game
-    , _activity_details        :: Maybe Text            -- ^ what the player is currently doing
-    , _activity_state          :: Maybe Text            -- ^ the user's current party status
-    , _activity_emoji          :: Maybe ActivityEmoji   -- ^ the emoji used for a custom status
-    , _activity_party          :: Maybe ActivityParty   -- ^ information for the current party of the player
-    , _activity_assets         :: Maybe ActivityAssets  -- ^ for the presence and their hover texts
-    , _activity_secrets        :: Maybe ActivitySecrets -- ^ for Rich Presence joining and spectating
-    , _activity_instance       :: Maybe Bool            -- ^ whether or not the activity is an instanced game session
-    , _activity_flags          :: Maybe Int             -- ^ activity flags ORd together, describes what the payload includes
-    } deriving stock (Generic, Show)
-instance FromJSON Activity where
-  parseJSON = genericParseJSON myDefaultOptions { fieldLabelModifier = drop 10 }
-instance ToJSON Activity where
-  toJSON = genericToJSON myDefaultOptions { fieldLabelModifier = drop 10 }
-
-                               --   Format              | Example
-data ActivityType = Game       -- ^ Playing {name}      | "Playing Rocket League"
-                  | Streaming  -- ^ Streaming {details} | "Streaming Rocket League"
-                  | Listening  -- ^ Listening to {name} | "Listening to Spotify"
-                  | Custom     -- ^ {emoji}{name}       | ":smiley: I am cool"
-                  | Competing  -- ^ Competing in {name} | "Competing in Arena World Champions"
-    deriving stock (Generic, Show)
-instance FromJSON ActivityType where
-  parseJSON (Number x) = case x of
-    0 -> pure Game
-    1 -> pure Streaming
-    2 -> pure Listening
-    3 -> pure Custom
-    4 -> pure Competing
-    _ -> mzero
-  parseJSON _ = mzero
-instance ToJSON ActivityType where
-  toJSON Game      = Number 0
-  toJSON Streaming = Number 1
-  toJSON Listening = Number 2
-  toJSON Custom    = Number 3
-  toJSON Competing = Number 4
-
-data Timestamps = Timestamps
-    { _timestamps_start :: Maybe Int -- ^ unix time (in milliseconds) of when the activity started
-    , _timestamps_end   :: Maybe Int -- ^ unix time (in milliseconds) of when the activity ends
-    } deriving stock (Generic, Show)
-instance FromJSON Timestamps where
-  parseJSON = genericParseJSON myDefaultOptions { fieldLabelModifier = drop 11 }
-instance ToJSON Timestamps where
-  toJSON = genericToJSON myDefaultOptions { fieldLabelModifier = drop 11 }
-
-data ActivityEmoji = ActivityEmoji
-    { _activity_emoji_name     :: Text            -- ^ the name of the emoji
-    , _activity_emoji_id       :: Maybe Snowflake -- ^ the id of the emoji
-    , _activity_emoji_animated :: Maybe Bool      -- ^ whether this emoji is animated
-    } deriving stock (Generic, Show)
-instance FromJSON ActivityEmoji where
-  parseJSON = genericParseJSON myDefaultOptions { fieldLabelModifier = drop 16 }
-instance ToJSON ActivityEmoji where
-  toJSON = genericToJSON myDefaultOptions { fieldLabelModifier = drop 16 }
-
-data ActivityParty = ActivityParty
-    { _activitiy_party_id   :: Maybe Text      -- ^ the id of the party
-    , _activitiy_party_size :: Maybe PartySize -- ^ used to show the party's current and maximum size
-    } deriving stock (Generic, Show)
-instance FromJSON ActivityParty where
-  parseJSON = genericParseJSON myDefaultOptions { fieldLabelModifier = drop 17 }
-instance ToJSON ActivityParty where
-  toJSON = genericToJSON myDefaultOptions { fieldLabelModifier = drop 17 }
-
-data PartySize = PartySize
-    { _party_size_current :: Int -- ^ current size
-    , _party_size_max     :: Int -- ^ max size
-    } deriving stock (Generic, Show)
-instance FromJSON PartySize where
-  parseJSON = genericParseJSON myDefaultOptions { fieldLabelModifier = drop 12 }
-instance ToJSON PartySize where
-  toJSON = genericToJSON myDefaultOptions { fieldLabelModifier = drop 12 }
-
-data ActivityAssets = ActivityAssets
-    { _activity_assets_large_image :: Maybe Text -- ^ the id for a large asset of the activity, usually a snowflake
-    , _activity_assets_large_text  :: Maybe Text -- ^ text displayed when hovering over the large image of the activity
-    , _activity_assets_small_image :: Maybe Text -- ^ the id for a small asset of the activity, usually a snowflake
-    , _activity_assets_small_text  :: Maybe Text -- ^ text displayed when hovering over the small image of the activity
-    } deriving stock (Generic, Show)
-instance FromJSON ActivityAssets where
-  parseJSON = genericParseJSON myDefaultOptions { fieldLabelModifier = drop 17 }
-instance ToJSON ActivityAssets where
-  toJSON = genericToJSON myDefaultOptions { fieldLabelModifier = drop 17 }
-
-data ActivitySecrets = ActivitySecrets
-    { _activity_secrets_join     :: Maybe Text -- ^ the secret for joining a party
-    , _activity_secrets_spectate :: Maybe Text -- ^ the secret for spectating a game
-    , _activity_secrets_match    :: Maybe Text -- ^ the secret for a specific instanced match
-    } deriving stock (Generic, Show)
-instance FromJSON ActivitySecrets where
-  parseJSON = genericParseJSON myDefaultOptions { fieldLabelModifier = drop 18 }
-instance ToJSON ActivitySecrets where
-  toJSON = genericToJSON myDefaultOptions { fieldLabelModifier = drop 18 }
 
 data StatusType = Online    -- ^ Online
                 | DND       -- ^ Do Not Disturb
@@ -325,22 +214,23 @@ instance ToJSON StatusType where
 
 -- | Bit shifting object representing gateway intents that can be subscribed to
 data GatewayIntents = Intents
-    { _gateway_intents_guilds                   :: Bool
-    , _gateway_intents_guild_members            :: Bool
-    , _gateway_intents_guild_bans               :: Bool
-    , _gateway_intents_guild_emojis             :: Bool
-    , _gateway_intents_guild_integrations       :: Bool
-    , _gateway_intents_guild_webhooks           :: Bool
-    , _gateway_intents_guild_invites            :: Bool
-    , _gateway_intents_guild_voice_status       :: Bool
-    , _gateway_intents_guild_presences          :: Bool
-    , _gateway_intents_guild_messages           :: Bool
-    , _gateway_intents_guild_message_reactions  :: Bool
-    , _gateway_intents_guild_message_typing     :: Bool
-    , _gateway_intents_direct_messages          :: Bool
-    , _gateway_intents_direct_message_reactions :: Bool
-    , _gateway_intents_direct_message_typing    :: Bool
-    } deriving stock (Generic, Show)
+  { _gateway_intents_guilds                   :: Bool
+  , _gateway_intents_guild_members            :: Bool
+  , _gateway_intents_guild_bans               :: Bool
+  , _gateway_intents_guild_emojis             :: Bool
+  , _gateway_intents_guild_integrations       :: Bool
+  , _gateway_intents_guild_webhooks           :: Bool
+  , _gateway_intents_guild_invites            :: Bool
+  , _gateway_intents_guild_voice_status       :: Bool
+  , _gateway_intents_guild_presences          :: Bool
+  , _gateway_intents_guild_messages           :: Bool
+  , _gateway_intents_guild_message_reactions  :: Bool
+  , _gateway_intents_guild_message_typing     :: Bool
+  , _gateway_intents_direct_messages          :: Bool
+  , _gateway_intents_direct_message_reactions :: Bool
+  , _gateway_intents_direct_message_typing    :: Bool
+  }
+  deriving stock (Generic, Show)
 instance ToJSON GatewayIntents where
   toJSON intent = toJSON
     (sum
@@ -416,15 +306,15 @@ instance FromJSON GatewayIntents where
 defaultIntents :: GatewayIntents
 defaultIntents = Intents False False False False False False False False False False False False False False False
 
-data Ready = Ready { _ready_v :: Int
-                   , _ready_user :: Object
-                   , _ready_private_channels :: [Object]
-                   , _ready_guilds :: [Object]
-                   , _ready_session_id :: Text
-                   , _ready_shard :: Maybe Shard
-                   , _ready_application :: Object
-                   } deriving stock (Generic, Show)
+data Ready = Ready
+  { _ready_v                :: Int
+  , _ready_user             :: Object
+  , _ready_private_channels :: [Object]
+  , _ready_guilds           :: [Object]
+  , _ready_session_id       :: Text
+  , _ready_shard            :: Maybe Shard
+  , _ready_application      :: Object
+  }
+  deriving stock (Generic, Show)
 instance FromJSON Ready where
   parseJSON = genericParseJSON myDefaultOptions { fieldLabelModifier = drop 7 }
-instance ToJSON Ready where
-  toJSON = genericToJSON myDefaultOptions { fieldLabelModifier = drop 7 }

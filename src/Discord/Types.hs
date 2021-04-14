@@ -3,8 +3,11 @@ Copyright: (c) 2021 Reyu Zenfold
 SPDX-License-Identifier: MIT
 Maintainer: Reyu Zenfold <reyu@reyuzenfold.com>
 
-Discord Library
 -}
 
-module Discord
-  () where
+module Discord.Types
+    ( module X
+    ) where
+
+import Discord.Types.Data as X
+import Discord.Types.Lens as X

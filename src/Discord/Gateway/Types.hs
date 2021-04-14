@@ -28,11 +28,11 @@ module Discord.Gateway.Types
   , GatewayEncoding(..)
   , GatewayCompression(..)
   , defaultGatewayParams
-  )
-where
+  ) where
 
-import           Discord.Gateway.Types.Messages as GM
 import           Discord.Gateway.Exceptions
+import           Discord.Gateway.Types.Messages
+                                               as GM
 
 import           Control.Exception.Safe
 import           Control.Lens
@@ -47,22 +47,20 @@ data GatewayInfo = GWInfo
   { _url                 :: Text              -- ^ The WSS URL that can be used for connecting to the gateway
   , _shards              :: Integer           -- ^ The recommended number of shards to use when connecting
   , _session_start_limit :: SessionStartLimit -- ^ Information on the current session start limit
-  } deriving stock    (Generic, Show)
+  }
+  deriving stock (Generic, Show)
 instance FromJSON GatewayInfo where
-  parseJSON = genericParseJSON defaultOptions
-    { fieldLabelModifier = map toLower . drop 1
-    }
+  parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = map toLower . drop 1 }
 
 data SessionStartLimit = SessionStartLimit
   { _total           :: Integer -- ^ The total number of session starts the current user is allowed
   , _remaining       :: Integer -- ^ The remaining number of session starts the current user is allowed
   , _reset_after     :: Integer -- ^ The number of milliseconds after which the limit resets
   , _max_concurrency :: Integer -- ^ The number of identify requests allowed per 5 seconds
-  } deriving stock    (Generic, Show)
+  }
+  deriving stock (Generic, Show)
 instance FromJSON SessionStartLimit where
-  parseJSON = genericParseJSON defaultOptions
-    { fieldLabelModifier = map toLower . drop 1
-    }
+  parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = map toLower . drop 1 }
 
 {-
  - | Data constructors for connecting to the Gateway
@@ -72,7 +70,8 @@ data GatewayParams = GWParams
   { _version  :: Integer                  -- ^ Gateway Version to use
   , _encoding :: GatewayEncoding          -- ^ The encoding of received gateway packets
   , _compress :: Maybe GatewayCompression -- ^ The (optional) compression of gateway packets
-  } deriving stock    (Generic, Show)
+  }
+  deriving stock (Generic, Show)
 
 {- | The Discord Gateway supports both JSON and ETF encodings.
  -   We, however, only support JSON at the moment.
@@ -85,7 +84,8 @@ instance Show GatewayEncoding where
 {- | The Discord Gateway supports ZLIB compression on payloads
  -   Unfortunately, we do not.
  -}
-data GatewayCompression = ZLIB_STREAM deriving stock (Generic, Enum)
+data GatewayCompression = ZLIB_STREAM
+  deriving stock (Generic, Enum)
 instance Show GatewayCompression where
   show ZLIB_STREAM = impureThrow UnsupportedCompression
 

@@ -37,9 +37,14 @@ dependencies:
 - wuss
 - stm
 - async
+- mtl
 
 library:
   source-dirs: src
+  other-modules:
+  - Discord.Types.Data
+  - Discord.Types.Classes
+  - Discord.Types.Lens
 
 tests:
   # hlint:

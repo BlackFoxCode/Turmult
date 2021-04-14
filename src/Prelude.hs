@@ -1,5 +1,5 @@
 module Prelude
-    ( module Relude
-    ) where
+  ( module Relude
+  ) where
 
-import Relude
+import           Relude

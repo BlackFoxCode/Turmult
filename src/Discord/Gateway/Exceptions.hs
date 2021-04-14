@@ -10,8 +10,7 @@ Maintainer: Reyu Zenfold <reyu@reyuzenfold.com>
 module Discord.Gateway.Exceptions
   ( GatewayException(..)
   , GWConnException(..)
-  )
-where
+  ) where
 
 data GatewayException =
     UnsupportedEncoding

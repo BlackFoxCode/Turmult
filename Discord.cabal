@@ -26,13 +26,17 @@ source-repository head
 library
   exposed-modules:
       Discord
+      Discord.Exceptions
       Discord.Gateway
       Discord.Gateway.Exceptions
       Discord.Gateway.Types
       Discord.Gateway.Types.Messages
+      Discord.Types
       Prelude
   other-modules:
-      Paths_Discord
+      Discord.Types.Data
+      Discord.Types.Classes
+      Discord.Types.Lens
   hs-source-dirs:
       src
   ghc-options: -Werror -Wall -Wcompat -Wincomplete-uni-patterns -Widentities
@@ -42,6 +46,7 @@ library
     , base-noprelude >=4.7 && <5
     , bytestring
     , lens
+    , mtl
     , network
     , relude
     , req
@@ -58,10 +63,15 @@ test-suite spec
   main-is: Spec.hs
   other-modules:
       Discord
+      Discord.Exceptions
       Discord.Gateway
       Discord.Gateway.Exceptions
       Discord.Gateway.Types
       Discord.Gateway.Types.Messages
+      Discord.Types
+      Discord.Types.Classes
+      Discord.Types.Data
+      Discord.Types.Lens
       Prelude
       Paths_Discord
   hs-source-dirs:
@@ -76,6 +86,7 @@ test-suite spec
     , hspec
     , hspec-core
     , lens
+    , mtl
     , network
     , relude
     , req
