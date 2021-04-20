@@ -7,7 +7,7 @@ Maintainer: Reyu Zenfold <reyu@reyuzenfold.com>
 
 -}
 
-module Discord.Gateway.Exceptions
+module Turmult.Gateway.Exceptions
   ( GatewayException(..)
   , GWConnException(..)
   ) where

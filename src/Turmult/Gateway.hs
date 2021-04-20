@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE LambdaCase         #-}
 {- |
 Copyright: (c) 2021 Reyu Zenfold
@@ -7,12 +6,12 @@ Maintainer: Reyu Zenfold <reyu@reyuzenfold.com>
 
 -}
 
-module Discord.Gateway
+module Turmult.Gateway
   ( runDiscord
   )
 where
 
-import           Discord.Gateway.Types
+import           Turmult.Gateway.Types
 
 import           Control.Concurrent
 import           Control.Concurrent.STM.TChan
@@ -24,6 +23,7 @@ import           Data.Aeson                     ( Result(..)
                                                 , encode
                                                 )
 import qualified Data.ByteString.Char8         as B
+import           Data.Default                   ( def )
 import           Data.Maybe                     ( fromJust )
 import           Network.HTTP.Req               ( (/:)
                                                 , GET(..)
@@ -93,7 +93,7 @@ runDiscord token params = outer LoopStart
                              Nothing      -- Shard info
                              Nothing      -- Presence
                              Nothing      -- Guild Subscriptions
-                             defaultIntents { _gateway_intents_guild_messages = True }
+                             def          -- Default Intents
         sendTextData conn . encode $ Payload 2 (Just $ toJSON ident) Nothing Nothing
         isReady <- receiveDataMessage conn
         let ready :: Ready

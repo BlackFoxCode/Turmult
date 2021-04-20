@@ -5,7 +5,7 @@ Maintainer: Reyu Zenfold <reyu@reyuzenfold.com>
 
 -}
 
-module Discord.Types.Classes
+module Turmult.Types.Classes
     ( Sendable
     , Receivable
     ) where

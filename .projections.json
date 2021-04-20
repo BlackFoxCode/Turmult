@@ -1,5 +1,5 @@
 {
-    "src/Discord/*.hs": {
+    "src/Turmult/*.hs": {
         "alternate": "test/{}Spec.hs",
         "type": "src",
         "template": [
@@ -10,11 +10,11 @@
             "",
             "-}",
             "",
-            "module Discord.{dot}",
+            "module Turmult.{dot}",
             "    () where"
         ]
     },
-    "src/Discord.hs": {
+    "src/Turmult.hs": {
         "alternate": "test/{}Spec.hs",
         "type": "src"
     },

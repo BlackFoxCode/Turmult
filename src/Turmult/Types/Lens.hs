@@ -6,12 +6,10 @@ Maintainer: Reyu Zenfold <reyu@reyuzenfold.com>
 
 -}
 
-module Discord.Types.Lens where
+module Turmult.Types.Lens where
 
-import           Discord.Types.Data
+import           Turmult.Types.Data
 import           Control.Lens.TH                ( makeLenses )
-
-$(makeLenses ''DiscordState)
 
 $(makeLenses ''Activity)
 $(makeLenses ''ActivityAssets)

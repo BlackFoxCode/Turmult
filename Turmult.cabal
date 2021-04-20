@@ -4,11 +4,11 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           Discord
+name:           Turmult
 version:        0.0.0.0
 description:    Please see the README on GitHub at <https://github.com/BlackFoxCode/Discord#readme>
-homepage:       https://github.com/BlackFoxCode/Discord#readme
-bug-reports:    https://github.com/BlackFoxCode/Discord/issues
+homepage:       https://github.com/BlackFoxCode/Turmult#readme
+bug-reports:    https://github.com/BlackFoxCode/Turmult/issues
 author:         Tim Millican
 maintainer:     reyu@reyuzenfold.com
 copyright:      2021 Tim Millican
@@ -21,40 +21,53 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/BlackFoxCode/Discord
+  location: https://github.com/BlackFoxCode/Turmult
 
 library
   exposed-modules:
-      Discord
-      Discord.Exceptions
-      Discord.Gateway
-      Discord.Gateway.Exceptions
-      Discord.Gateway.Types
-      Discord.Gateway.Types.Messages
-      Discord.Types
       Prelude
+      Turmult
+      Turmult.Exceptions
+      Turmult.Gateway
+      Turmult.Gateway.Exceptions
+      Turmult.Gateway.Types
+      Turmult.Gateway.Types.Messages
+      Turmult.Types
   other-modules:
-      Discord.Types.Data
-      Discord.Types.Classes
-      Discord.Types.Lens
+      Turmult.Types.Data
+      Turmult.Types.Classes
+      Turmult.Types.Lens
   hs-source-dirs:
       src
+  default-extensions:
+      DataKinds
+      FlexibleContexts
+      GADTs
+      LambdaCase
+      OverloadedStrings
+      PolyKinds
+      RankNTypes
+      ScopedTypeVariables
+      TypeApplications
+      TypeFamilies
+      TypeOperators
   ghc-options: -Werror -Wall -Wcompat -Wincomplete-uni-patterns -Widentities
   build-depends:
       aeson
     , async
     , base-noprelude >=4.7 && <5
     , bytestring
+    , data-default
     , lens
     , mtl
     , network
     , relude
     , req
-    , safe-exceptions >=0.1.7.1 && <1
+    , safe-exceptions
     , scientific
     , stm
     , text
-    , websockets >=0.12.7.2 && <1
+    , websockets
     , wuss
   default-language: Haskell2010
 
@@ -62,27 +75,40 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Discord
-      Discord.Exceptions
-      Discord.Gateway
-      Discord.Gateway.Exceptions
-      Discord.Gateway.Types
-      Discord.Gateway.Types.Messages
-      Discord.Types
-      Discord.Types.Classes
-      Discord.Types.Data
-      Discord.Types.Lens
       Prelude
-      Paths_Discord
+      Turmult
+      Turmult.Exceptions
+      Turmult.Gateway
+      Turmult.Gateway.Exceptions
+      Turmult.Gateway.Types
+      Turmult.Gateway.Types.Messages
+      Turmult.Types
+      Turmult.Types.Classes
+      Turmult.Types.Data
+      Turmult.Types.Lens
+      Paths_Turmult
   hs-source-dirs:
       test
       src
+  default-extensions:
+      DataKinds
+      FlexibleContexts
+      GADTs
+      LambdaCase
+      OverloadedStrings
+      PolyKinds
+      RankNTypes
+      ScopedTypeVariables
+      TypeApplications
+      TypeFamilies
+      TypeOperators
   ghc-options: -Werror -Wall -Wcompat -Wincomplete-uni-patterns -Widentities -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
     , async
     , base-noprelude >=4.7 && <5
     , bytestring
+    , data-default
     , hspec
     , hspec-core
     , lens
@@ -90,10 +116,10 @@ test-suite spec
     , network
     , relude
     , req
-    , safe-exceptions >=0.1.7.1 && <1
+    , safe-exceptions
     , scientific
     , stm
     , text
-    , websockets >=0.12.7.2 && <1
+    , websockets
     , wuss
   default-language: Haskell2010

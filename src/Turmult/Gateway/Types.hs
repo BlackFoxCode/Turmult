@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DeriveAnyClass     #-}
-{-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TemplateHaskell    #-}
 {- |
 Copyright: (c) 2021 Reyu Zenfold
@@ -10,7 +9,7 @@ Maintainer: Reyu Zenfold <reyu@reyuzenfold.com>
 
 -}
 
-module Discord.Gateway.Types
+module Turmult.Gateway.Types
   ( module GM
   , GatewayInfo
   , url
@@ -27,17 +26,19 @@ module Discord.Gateway.Types
   , compress
   , GatewayEncoding(..)
   , GatewayCompression(..)
-  , defaultGatewayParams
   ) where
 
-import           Discord.Gateway.Exceptions
-import           Discord.Gateway.Types.Messages
+import           Turmult.Gateway.Exceptions
+import           Turmult.Gateway.Types.Messages
                                                as GM
 
 import           Control.Exception.Safe
 import           Control.Lens
 import           Data.Aeson
 import           Data.Char                      ( toLower )
+import           Data.Default                   ( Default
+                                                , def
+                                                )
 import qualified Text.Show
 
 {- | Data constructors to discover Gateway connection info
@@ -72,6 +73,8 @@ data GatewayParams = GWParams
   , _compress :: Maybe GatewayCompression -- ^ The (optional) compression of gateway packets
   }
   deriving stock (Generic, Show)
+instance Default GatewayParams where
+  def = GWParams { _version = 8, _encoding = JSON, _compress = Nothing }
 
 {- | The Discord Gateway supports both JSON and ETF encodings.
  -   We, however, only support JSON at the moment.
@@ -88,9 +91,6 @@ data GatewayCompression = ZLIB_STREAM
   deriving stock (Generic, Enum)
 instance Show GatewayCompression where
   show ZLIB_STREAM = impureThrow UnsupportedCompression
-
-defaultGatewayParams :: GatewayParams
-defaultGatewayParams = GWParams 8 JSON Nothing
 
 $(makeLenses ''GatewayInfo)
 $(makeLenses ''SessionStartLimit)

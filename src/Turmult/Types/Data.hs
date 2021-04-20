@@ -9,42 +9,41 @@ Maintainer: Reyu Zenfold <reyu@reyuzenfold.com>
 
 -}
 
-module Discord.Types.Data
+module Turmult.Types.Data
   ( Sendable
   , Receivable
   , Snowflake
-  , DiscordState(..)
-  , Activity(..)
-  , ActivityType(..)
-  , Timestamps(..)
-  , ActivityEmoji(..)
-  , ActivityParty(..)
-  , PartySize(..)
-  , ActivityAssets(..)
-  , ActivitySecrets(..)
-  , Channel(..)
-  , ClientStatus(..)
-  , Emoji(..)
-  , Guild(..)
-  , GuildMember(..)
-  , Invite(..)
-  , Overwrite(..)
-  , OverwriteType(..)
-  , PresenceUpdate(..)
-  , Role(..)
-  , RoleTag(..)
-  , Template(..)
-  , User(..)
-  , UserFlags(..)
-  , VoiceState(..)
-  , Webhook(..)
-  , WebhookType(..)
-  , WelcomeScreen(..)
-  , WelcomeScreenChannel(..)
+  , Activity
+  , ActivityType
+  , Timestamps
+  , ActivityEmoji
+  , ActivityParty
+  , PartySize
+  , ActivityAssets
+  , ActivitySecrets
+  , Channel
+  , ClientStatus
+  , Emoji
+  , Guild
+  , GuildMember
+  , Invite
+  , Overwrite
+  , OverwriteType
+  , PresenceUpdate
+  , Role
+  , RoleTag
+  , Template
+  , User
+  , UserFlags
+  , VoiceState
+  , Webhook
+  , WebhookType
+  , WelcomeScreen
+  , WelcomeScreenChannel
   )
 where
 
-import           Discord.Types.Classes
+import           Turmult.Types.Classes
 
 import           Data.Aeson                     ( FromJSON
                                                 , Object
@@ -75,11 +74,6 @@ defaultJSONOptions x = defaultOptions { omitNothingFields = True , fieldLabelMod
  -  parent's ID.
  -}
 type Snowflake = Text
-
-data DiscordState = DiscordState
-  { _discordUser :: User
-  , _guilds      :: [Guild]
-  } deriving stock (Generic, Show)
 
 data Activity = Activity
   { _activityName           :: Text                  -- ^ the activity's name

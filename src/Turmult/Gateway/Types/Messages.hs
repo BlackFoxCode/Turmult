@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TemplateHaskell    #-}
 {- |
 Copyright: (c) 2021 Reyu Zenfold
@@ -9,7 +8,7 @@ Maintainer: Reyu Zenfold <reyu@reyuzenfold.com>
 
 -}
 
-module Discord.Gateway.Types.Messages
+module Turmult.Gateway.Types.Messages
   ( -- | Gateway Commands
     Payload(..)
   , payload_op
@@ -30,17 +29,17 @@ module Discord.Gateway.Types.Messages
   , Shard(..)
   , StatusType(..)
   , GatewayIntents(..)
-  , defaultIntents
   , Ready(..)
   ) where
 
-import           Discord.Types
-import           Discord.Gateway.Exceptions     ( GatewayException(..) )
+import           Turmult.Types
+import           Turmult.Gateway.Exceptions     ( GatewayException(..) )
 
 import           Control.Exception.Safe         ( impureThrow )
 import           Control.Lens
 import           Data.Aeson
 import           Data.Bits                      ( shift, testBit )
+import Data.Default ( Default, def )
 import           Data.Maybe                     ( fromJust )
 import           Data.Scientific ( toBoundedInteger )
 import           Network.WebSockets
@@ -302,15 +301,29 @@ instance FromJSON GatewayIntents where
                (mask `testBit` 14)
       )
   parseJSON _ = mzero
-
-defaultIntents :: GatewayIntents
-defaultIntents = Intents False False False False False False False False False False False False False False False
+instance Default GatewayIntents where
+    def = Intents { _gateway_intents_guilds                   = False
+                  , _gateway_intents_guild_members            = False
+                  , _gateway_intents_guild_bans               = False
+                  , _gateway_intents_guild_emojis             = False
+                  , _gateway_intents_guild_integrations       = False
+                  , _gateway_intents_guild_webhooks           = False
+                  , _gateway_intents_guild_invites            = False
+                  , _gateway_intents_guild_voice_status       = False
+                  , _gateway_intents_guild_presences          = False
+                  , _gateway_intents_guild_messages           = True
+                  , _gateway_intents_guild_message_reactions  = False
+                  , _gateway_intents_guild_message_typing     = False
+                  , _gateway_intents_direct_messages          = False
+                  , _gateway_intents_direct_message_reactions = False
+                  , _gateway_intents_direct_message_typing    = False
+                  }
 
 data Ready = Ready
   { _ready_v                :: Int
-  , _ready_user             :: Object
-  , _ready_private_channels :: [Object]
-  , _ready_guilds           :: [Object]
+  , _ready_user             :: User
+  , _ready_private_channels :: [Channel]
+  , _ready_guilds           :: [Guild]
   , _ready_session_id       :: Text
   , _ready_shard            :: Maybe Shard
   , _ready_application      :: Object
