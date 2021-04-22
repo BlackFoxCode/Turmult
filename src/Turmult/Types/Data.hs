@@ -1,7 +1,6 @@
 {-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase            #-}
 {- |
 Copyright: (c) 2021 Reyu Zenfold
 SPDX-License-Identifier: MIT
@@ -10,9 +9,21 @@ Maintainer: Reyu Zenfold <reyu@reyuzenfold.com>
 -}
 
 module Turmult.Types.Data
-  ( Sendable
+  ( -- * Type Classes
+    Sendable
   , Receivable
-  , Snowflake
+  , -- * Resources
+    -- ** General
+    Snowflake
+  , -- ** Audit Log
+    AuditLog
+  , AuditLogEntry
+  , AuditLogChange
+  , AuditLogEvent(..)
+  , AuditLogChangeType(..)
+  , AuditLogChangeValue(..)
+  , AuditLogInfo
+    -- ** Unsorted
   , Activity
   , ActivityType
   , Timestamps
@@ -50,6 +61,8 @@ import           Data.Aeson                     ( FromJSON
                                                 , Options
                                                 , ToJSON
                                                 , Value(..)
+                                                , (.:)
+                                                , (.:?)
                                                 , camelTo2
                                                 , defaultOptions
                                                 , fieldLabelModifier
@@ -58,7 +71,9 @@ import           Data.Aeson                     ( FromJSON
                                                 , omitNothingFields
                                                 , parseJSON
                                                 , toJSON
+                                                , withObject
                                                 )
+import           Data.Aeson.Types               ( Parser )
 import           Data.Bits                      ( testBit )
 import           Data.Scientific                ( toBoundedInteger )
 
@@ -75,6 +90,262 @@ defaultJSONOptions x = defaultOptions { omitNothingFields = True , fieldLabelMod
  -}
 type Snowflake = Text
 
+{- | Audit Logs
+ - Whenever an admin action is performed on the API, an entry is added to the
+ - respective guild's audit log. You can specify the reason by attaching the
+ - `X-Audit-Log-Reason` request header. This header supports url encoded utf8
+ - characters.
+ -}
+data AuditLog = AuditLog
+  { _auditLogWebhooks        :: [Webhook]       -- ^ list of webhooks found in the audit log
+  , _auditLogUsers           :: [User]          -- ^ list of users found in the audit log
+  , _auditLogAuditLogEntries :: [AuditLogEntry] -- ^ list of audit log entries
+  , _auditLogIntegrations    :: [Integration]   -- ^ list of partial integration objects
+  } deriving stock (Generic, Show)
+instance FromJSON AuditLog where
+  parseJSON = genericParseJSON $ defaultJSONOptions 9
+instance Receivable AuditLog
+
+-- | Audit Log Entry Object
+data AuditLogEntry = AuditLogEntry
+  { _auditLogEntryTargetId   :: Maybe Text             -- ^ id of the affected entity (webhook, user, role, etc.)
+  , _auditLogEntryChanges    :: Maybe [AuditLogChange] -- ^ changes made to the target_id
+  , _auditLogEntryUserId     :: Maybe Snowflake        -- ^ the user who made the changes
+  , _auditLogEntryId         :: Snowflake              -- ^ id of the entry
+  , _auditLogEntryActionType :: AuditLogEvent          -- ^ type of action that occurred
+  , _auditLogEntryOptions    :: Maybe AuditLogInfo     -- ^ additional info for certain action types
+  , _auditLogEntryReason     :: Maybe Text             -- ^ the reason for the change (0-512 characters)
+  } deriving stock (Generic, Show)
+instance FromJSON AuditLogEntry where
+  parseJSON = genericParseJSON $ defaultJSONOptions 14
+instance Receivable AuditLogEntry
+
+-- | Audit Log Events
+data AuditLogEvent =
+    GUILD_UPDATE
+  | CHANNEL_CREATE
+  | CHANNEL_UPDATE
+  | CHANNEL_DELETE
+  | CHANNEL_OVERWRITE_CREATE
+  | CHANNEL_OVERWRITE_UPDATE
+  | CHANNEL_OVERWRITE_DELETE
+  | MEMBER_KICK
+  | MEMBER_PRUNE
+  | MEMBER_BAN_ADD
+  | MEMBER_BAN_REMOVE
+  | MEMBER_UPDATE
+  | MEMBER_ROLE_UPDATE
+  | MEMBER_MOVE
+  | MEMBER_DISCONNECT
+  | BOT_ADD
+  | ROLE_CREATE
+  | ROLE_UPDATE
+  | ROLE_DELETE
+  | INVITE_CREATE
+  | INVITE_UPDATE
+  | INVITE_DELETE
+  | WEBHOOK_CREATE
+  | WEBHOOK_UPDATE
+  | WEBHOOK_DELETE
+  | EMOJI_CREATE
+  | EMOJI_UPDATE
+  | EMOJI_DELETE
+  | MESSAGE_DELETE
+  | MESSAGE_BULK_DELETE
+  | MESSAGE_PIN
+  | MESSAGE_UNPIN
+  | INTEGRATION_CREATE
+  | INTEGRATION_UPDATE
+  | INTEGRATION_DELETE
+  deriving stock (Generic, Show, Enum)
+instance FromJSON AuditLogEvent where
+  parseJSON (Number 1)  = pure GUILD_UPDATE
+  parseJSON (Number 10) = pure CHANNEL_CREATE
+  parseJSON (Number 11) = pure CHANNEL_UPDATE
+  parseJSON (Number 12) = pure CHANNEL_DELETE
+  parseJSON (Number 13) = pure CHANNEL_OVERWRITE_CREATE
+  parseJSON (Number 14) = pure CHANNEL_OVERWRITE_UPDATE
+  parseJSON (Number 15) = pure CHANNEL_OVERWRITE_DELETE
+  parseJSON (Number 20) = pure MEMBER_KICK
+  parseJSON (Number 21) = pure MEMBER_PRUNE
+  parseJSON (Number 22) = pure MEMBER_BAN_ADD
+  parseJSON (Number 23) = pure MEMBER_BAN_REMOVE
+  parseJSON (Number 24) = pure MEMBER_UPDATE
+  parseJSON (Number 25) = pure MEMBER_ROLE_UPDATE
+  parseJSON (Number 26) = pure MEMBER_MOVE
+  parseJSON (Number 27) = pure MEMBER_DISCONNECT
+  parseJSON (Number 28) = pure BOT_ADD
+  parseJSON (Number 30) = pure ROLE_CREATE
+  parseJSON (Number 31) = pure ROLE_UPDATE
+  parseJSON (Number 32) = pure ROLE_DELETE
+  parseJSON (Number 40) = pure INVITE_CREATE
+  parseJSON (Number 41) = pure INVITE_UPDATE
+  parseJSON (Number 42) = pure INVITE_DELETE
+  parseJSON (Number 50) = pure WEBHOOK_CREATE
+  parseJSON (Number 51) = pure WEBHOOK_UPDATE
+  parseJSON (Number 52) = pure WEBHOOK_DELETE
+  parseJSON (Number 60) = pure EMOJI_CREATE
+  parseJSON (Number 61) = pure EMOJI_UPDATE
+  parseJSON (Number 62) = pure EMOJI_DELETE
+  parseJSON (Number 72) = pure MESSAGE_DELETE
+  parseJSON (Number 73) = pure MESSAGE_BULK_DELETE
+  parseJSON (Number 74) = pure MESSAGE_PIN
+  parseJSON (Number 75) = pure MESSAGE_UNPIN
+  parseJSON (Number 80) = pure INTEGRATION_CREATE
+  parseJSON (Number 81) = pure INTEGRATION_UPDATE
+  parseJSON (Number 82) = pure INTEGRATION_DELETE
+  parseJSON _  = mzero
+instance Receivable AuditLogEvent
+
+-- | Optional Audit Entry Info
+data AuditLogInfo = AuditLogInfo
+  { _auditLogInfoDeleteMemberDays :: Maybe Text      -- ^ number of days after which inactive members were kicked
+  , _auditLogInfoMembersRemoved   :: Maybe Text      -- ^ number of members removed by the prune
+  , _auditLogInfoChannelId        :: Maybe Snowflake -- ^ channel in which the entities were targeted
+  , _auditLogInfoMessageId        :: Maybe Snowflake -- ^ id of the message that was targeted
+  , _auditLogInfoCount            :: Maybe Text      -- ^ number of entities that were targeted
+  , _auditLogInfoId               :: Maybe Snowflake -- ^ id of the overwritten entity
+  , _auditLogInfoType             :: Maybe Text      -- ^ type of overwritten entity - "0" for "role" or "1" for "member"
+  , _auditLogInfoRoleName         :: Maybe Text      -- ^ name of the role if type is "0" (not present if type is "1")
+  } deriving stock (Generic, Show)
+instance FromJSON AuditLogInfo where
+  parseJSON = genericParseJSON $ defaultJSONOptions 13
+instance Receivable AuditLogInfo
+
+-- | Audit Log Change Object
+--   If `new_value` is not present in the change object, while `old_value` is, that
+--   means the property that was changed has been reset, or set to `null`
+data AuditLogChange = AuditLogChange
+  { _auditLogChangeValue :: AuditLogChangeValue -- ^ new value
+  , _auditLogChangeKey   :: AuditLogChangeType  -- ^ type of change
+  } deriving stock (Generic, Show)
+instance FromJSON AuditLogChange where
+    parseJSON = withObject "AuditLogChange" $ \obj -> (obj .: "key" :: Parser Text) >>= \case
+          "name"                          -> AuditLogChange <$> (AuditLogChangeName                        <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "description"                   -> AuditLogChange <$> (AuditLogChangeDescription                 <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "icon_hash"                     -> AuditLogChange <$> (AuditLogChangeIconHash                    <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "splash_hash"                   -> AuditLogChange <$> (AuditLogChangeSplashHash                  <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "discovery_splash_hash"         -> AuditLogChange <$> (AuditLogChangeDiscoverySplashHash         <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "banner_hash"                   -> AuditLogChange <$> (AuditLogChangeBannerHash                  <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "owner_id"                      -> AuditLogChange <$> (AuditLogChangeOwnerId                     <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "region"                        -> AuditLogChange <$> (AuditLogChangeRegion                      <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "preferred_locale"              -> AuditLogChange <$> (AuditLogChangePreferredLocale             <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "afk_channel_id"                -> AuditLogChange <$> (AuditLogChangeAfkChannelId                <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "afk_timeout"                   -> AuditLogChange <$> (AuditLogChangeAfkTimeout                  <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "rules_channel_id"              -> AuditLogChange <$> (AuditLogChangeRulesChannelId              <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "public_updates_channel_id"     -> AuditLogChange <$> (AuditLogChangePublicUpdatesChannelId      <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "mfa_level"                     -> AuditLogChange <$> (AuditLogChangeMfaLevel                    <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "verification_level"            -> AuditLogChange <$> (AuditLogChangeVerificationLevel           <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "explicit_content_filter"       -> AuditLogChange <$> (AuditLogChangeExplicitContentFilter       <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "default_message_notifications" -> AuditLogChange <$> (AuditLogChangeDefaultMessageNotifications <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "vanity_url_code"               -> AuditLogChange <$> (AuditLogChangeVanityUrlCode               <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "$add"                          -> AuditLogChange <$> (AuditLogChangeAdd                         <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "$remove"                       -> AuditLogChange <$> (AuditLogChangeRemove                      <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "prune_delete_days"             -> AuditLogChange <$> (AuditLogChangePruneDeleteDays             <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "widget_enabled"                -> AuditLogChange <$> (AuditLogChangeWidgetEnabled               <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "widget_channel_id"             -> AuditLogChange <$> (AuditLogChangeWidgetChannelId             <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "system_channel_id"             -> AuditLogChange <$> (AuditLogChangeSystemChannelId             <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedGuild
+          "position"                      -> AuditLogChange <$> (AuditLogChangePosition                    <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedChannel
+          "topic"                         -> AuditLogChange <$> (AuditLogChangeTopic                       <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedChannel
+          "bitrate"                       -> AuditLogChange <$> (AuditLogChangeBitrate                     <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedChannel
+          "permission_overwrites"         -> AuditLogChange <$> (AuditLogChangePermissionOverwrites        <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedChannel
+          "nsfw"                          -> AuditLogChange <$> (AuditLogChangeNsfw                        <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedChannel
+          "application_id"                -> AuditLogChange <$> (AuditLogChangeApplicationId               <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedChannel
+          "rate_limit_per_user"           -> AuditLogChange <$> (AuditLogChangeRateLimitPerUser            <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedChannel
+          "permissions"                   -> AuditLogChange <$> (AuditLogChangePermissions                 <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedRole
+          "color"                         -> AuditLogChange <$> (AuditLogChangeColor                       <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedRole
+          "hoist"                         -> AuditLogChange <$> (AuditLogChangeHoist                       <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedRole
+          "mentionable"                   -> AuditLogChange <$> (AuditLogChangeMentionable                 <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedRole
+          "allow"                         -> AuditLogChange <$> (AuditLogChangeAllow                       <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedRole
+          "deny"                          -> AuditLogChange <$> (AuditLogChangeDeny                        <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedRole
+          "code"                          -> AuditLogChange <$> (AuditLogChangeCode                        <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedInvite
+          "channel_id"                    -> AuditLogChange <$> (AuditLogChangeChannelId                   <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedInvite
+          "inviter_id"                    -> AuditLogChange <$> (AuditLogChangeInviterId                   <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedInvite
+          "max_uses"                      -> AuditLogChange <$> (AuditLogChangeMaxUses                     <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedInvite
+          "uses"                          -> AuditLogChange <$> (AuditLogChangeUses                        <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedInvite
+          "max_age"                       -> AuditLogChange <$> (AuditLogChangeMaxAge                      <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedInvite
+          "temporary"                     -> AuditLogChange <$> (AuditLogChangeTemporary                   <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedInvite
+          "deaf"                          -> AuditLogChange <$> (AuditLogChangeDeaf                        <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedUser
+          "mute"                          -> AuditLogChange <$> (AuditLogChangeMute                        <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedUser
+          "nick"                          -> AuditLogChange <$> (AuditLogChangeNick                        <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedUser
+          "avatar_hash"                   -> AuditLogChange <$> (AuditLogChangeAvatarHash                  <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedUser
+          "id"                            -> AuditLogChange <$> (AuditLogChangeId                          <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedAny
+          "type"                          -> AuditLogChange <$> (AuditLogChangeType                        <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedAny
+          "enable_emoticons"              -> AuditLogChange <$> (AuditLogChangeEnableEmoticons             <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedIntegration
+          "expire_behavior"               -> AuditLogChange <$> (AuditLogChangeExpireBehavior              <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedIntegration
+          "expire_grace_period"           -> AuditLogChange <$> (AuditLogChangeExpireGracePeriod           <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedIntegration
+          "user_limit"                    -> AuditLogChange <$> (AuditLogChangeUserLimit                   <$> obj .:? "new_value" <*> obj .:? "old_value") <*> pure AuditLogChangedVoiceChannel
+          _ {- Unkown Key -}              -> fail "Unkown AuditLog change type"
+instance Receivable AuditLogChange
+
+data AuditLogChangeType =
+    AuditLogChangedGuild
+  | AuditLogChangedChannel
+  | AuditLogChangedRole
+  | AuditLogChangedInvite
+  | AuditLogChangedUser
+  | AuditLogChangedAny
+  | AuditLogChangedIntegration
+  | AuditLogChangedVoiceChannel
+  deriving stock (Generic, Show, Enum)
+
+data AuditLogChangeValue =                 --  New Value         Old Value
+    AuditLogChangeName                        (Maybe Text)      (Maybe Text)      -- ^ Change Type: guild - name changed
+  | AuditLogChangeDescription                 (Maybe Text)      (Maybe Text)      -- ^ Change Type: guild - description changed
+  | AuditLogChangeIconHash                    (Maybe Text)      (Maybe Text)      -- ^ Change Type: guild - icon changed
+  | AuditLogChangeSplashHash                  (Maybe Text)      (Maybe Text)      -- ^ Change Type: guild - invite splash page artwork changed
+  | AuditLogChangeDiscoverySplashHash         (Maybe Text)      (Maybe Text)      -- ^ Change Type: guild - discovery splash changed
+  | AuditLogChangeBannerHash                  (Maybe Text)      (Maybe Text)      -- ^ Change Type: guild - guild banner changed
+  | AuditLogChangeOwnerId                     (Maybe Snowflake) (Maybe Snowflake) -- ^ Change Type: guild - owner changed
+  | AuditLogChangeRegion                      (Maybe Text)      (Maybe Text)      -- ^ Change Type: guild - region changed
+  | AuditLogChangePreferredLocale             (Maybe Text)      (Maybe Text)      -- ^ Change Type: guild - preferred locale changed
+  | AuditLogChangeAfkChannelId                (Maybe Snowflake) (Maybe Snowflake) -- ^ Change Type: guild - afk channel changed
+  | AuditLogChangeAfkTimeout                  (Maybe Int)       (Maybe Int)       -- ^ Change Type: guild - afk timeout duration changed
+  | AuditLogChangeRulesChannelId              (Maybe Snowflake) (Maybe Snowflake) -- ^ Change Type: guild - id of the rules channel changed
+  | AuditLogChangePublicUpdatesChannelId      (Maybe Snowflake) (Maybe Snowflake) -- ^ Change Type: guild - id of the public updates channel changed
+  | AuditLogChangeMfaLevel                    (Maybe Int)       (Maybe Int)       -- ^ Change Type: guild - two-factor auth requirement changed
+  | AuditLogChangeVerificationLevel           (Maybe Int)       (Maybe Int)       -- ^ Change Type: guild - required verification level changed
+  | AuditLogChangeExplicitContentFilter       (Maybe Int)       (Maybe Int)       -- ^ Change Type: guild - change in whose messages are scanned and deleted for explicit content in the server
+  | AuditLogChangeDefaultMessageNotifications (Maybe Int)       (Maybe Int)       -- ^ Change Type: guild - default message notification level changed
+  | AuditLogChangeVanityUrlCode               (Maybe Text)      (Maybe Text)      -- ^ Change Type: guild - guild invite vanity url changed
+  | AuditLogChangeAdd                         (Maybe [Role])    (Maybe [Role])    -- ^ Change Type: guild - new role added
+  | AuditLogChangeRemove                      (Maybe [Role])    (Maybe [Role])    -- ^ Change Type: guild - role removed
+  | AuditLogChangePruneDeleteDays             (Maybe Int)       (Maybe Int)       -- ^ Change Type: guild - change in number of days after which inactive and role-unassigned members are kicked
+  | AuditLogChangeWidgetEnabled               (Maybe Bool)      (Maybe Bool)      -- ^ Change Type: guild - server widget enabled/disable
+  | AuditLogChangeWidgetChannelId             (Maybe Snowflake) (Maybe Snowflake) -- ^ Change Type: guild - channel id of the server widget changed
+  | AuditLogChangeSystemChannelId             (Maybe Snowflake) (Maybe Snowflake) -- ^ Change Type: guild - id of the system channel changed
+  | AuditLogChangePosition                    (Maybe Int)       (Maybe Int)       -- ^ Change Type: channel - text or voice channel position changed
+  | AuditLogChangeTopic                       (Maybe Text)      (Maybe Text)      -- ^ Change Type: channel - text channel topic changed
+  | AuditLogChangeBitrate                     (Maybe Int)       (Maybe Int)       -- ^ Change Type: channel - voice channel bitrate changed
+  | AuditLogChangePermissionOverwrites        (Maybe [Channel]) (Maybe [Channel]) -- ^ Change Type: channel - permissions on a channel changed
+  | AuditLogChangeNsfw                        (Maybe Bool)      (Maybe Bool)      -- ^ Change Type: channel - channel nsfw restriction changed
+  | AuditLogChangeApplicationId               (Maybe Snowflake) (Maybe Snowflake) -- ^ Change Type: channel - application id of the added or removed webhook or bot
+  | AuditLogChangeRateLimitPerUser            (Maybe Int)       (Maybe Int)       -- ^ Change Type: channel - amount of seconds a user has to wait before sending another message changed
+  | AuditLogChangePermissions                 (Maybe Text)      (Maybe Text)      -- ^ Change Type: role - permissions for a role changed
+  | AuditLogChangeColor                       (Maybe Int)       (Maybe Int)       -- ^ Change Type: role - role color changed
+  | AuditLogChangeHoist                       (Maybe Bool)      (Maybe Bool)      -- ^ Change Type: role - role is now displayed/no longer displayed separate from online users
+  | AuditLogChangeMentionable                 (Maybe Bool)      (Maybe Bool)      -- ^ Change Type: role - role is now mentionable/unmentionable
+  | AuditLogChangeAllow                       (Maybe Text)      (Maybe Text)      -- ^ Change Type: role - a permission on a text or voice channel was allowed for a role
+  | AuditLogChangeDeny                        (Maybe Text)      (Maybe Text)      -- ^ Change Type: role - a permission on a text or voice channel was denied for a role
+  | AuditLogChangeCode                        (Maybe Text)      (Maybe Text)      -- ^ Change Type: invite - invite code changed
+  | AuditLogChangeChannelId                   (Maybe Snowflake) (Maybe Snowflake) -- ^ Change Type: invite - channel for invite code changed
+  | AuditLogChangeInviterId                   (Maybe Snowflake) (Maybe Snowflake) -- ^ Change Type: invite - person who created invite code changed
+  | AuditLogChangeMaxUses                     (Maybe Int)       (Maybe Int)       -- ^ Change Type: invite - change to max number of times invite code can be used
+  | AuditLogChangeUses                        (Maybe Int)       (Maybe Int)       -- ^ Change Type: invite - number of times invite code used changed
+  | AuditLogChangeMaxAge                      (Maybe Int)       (Maybe Int)       -- ^ Change Type: invite - how long invite code lasts changed
+  | AuditLogChangeTemporary                   (Maybe Bool)      (Maybe Bool)      -- ^ Change Type: invite - invite code is temporary/never expires
+  | AuditLogChangeDeaf                        (Maybe Bool)      (Maybe Bool)      -- ^ Change Type: user - user server deafened/undeafened
+  | AuditLogChangeMute                        (Maybe Bool)      (Maybe Bool)      -- ^ Change Type: user - user server muted/unmuted
+  | AuditLogChangeNick                        (Maybe Text)      (Maybe Text)      -- ^ Change Type: user - user nickname changed
+  | AuditLogChangeAvatarHash                  (Maybe Text)      (Maybe Text)      -- ^ Change Type: user - user avatar changed
+  | AuditLogChangeId                          (Maybe Snowflake) (Maybe Snowflake) -- ^ Change Type: any - the id of the changed entity - sometimes used in conjunction with other keys
+  | AuditLogChangeType                        (Maybe Text)      (Maybe Text)      -- ^ Change Type: any - type of entity created
+  | AuditLogChangeEnableEmoticons             (Maybe Bool)      (Maybe Bool)      -- ^ Change Type: integration - integration emoticons enabled/disabled
+  | AuditLogChangeExpireBehavior              (Maybe Int)       (Maybe Int)       -- ^ Change Type: integration - integration expiring subscriber behavior changed
+  | AuditLogChangeExpireGracePeriod           (Maybe Int)       (Maybe Int)       -- ^ Change Type: integration - integration expire grace period changed
+  | AuditLogChangeUserLimit                   (Maybe Int)       (Maybe Int)       -- ^ Change Type: voice channel - new user limit in a voice channel
+  deriving stock (Generic, Show)
+
 data Activity = Activity
   { _activityName           :: Text                  -- ^ the activity's name
   , _activityType           :: ActivityType          -- ^ activity type
@@ -90,8 +361,7 @@ data Activity = Activity
   , _activitySecrets        :: Maybe ActivitySecrets -- ^ for Rich Presence joining and spectating
   , _activityInstance       :: Maybe Bool            -- ^ whether or not the activity is an instanced game session
   , _activityFlags          :: Maybe Int             -- ^ activity flags ORd together, describes what the payload includes
-  }
-  deriving stock (Generic, Show)
+  } deriving stock (Generic, Show)
 instance FromJSON Activity where
   parseJSON = genericParseJSON $ defaultJSONOptions 9
 instance ToJSON Activity where
@@ -275,6 +545,57 @@ data GuildMember = GuildMember
   } deriving stock (Generic, Show)
 instance FromJSON GuildMember where
   parseJSON = genericParseJSON $ defaultJSONOptions 12
+
+data Integration = Integration
+  { _integrationId                :: Snowflake                       -- ^ integration id
+  , _integrationName              :: Text                            -- ^ integration name
+  , _integrationType              :: Text                            -- ^ integration type (twitch, youtube, or discord)
+  , _integrationEnabled           :: Bool                            -- ^ is this integration enabled
+  , _integrationSyncing           :: Maybe Bool                      -- ^ is this integration syncing
+  , _integrationRoleId            :: Maybe Snowflake                 -- ^ id that this integration uses for "subscribers"
+  , _integrationEnableEmoticons   :: Maybe Bool                      -- ^ whether emoticons should be synced for this integration (twitch only currently)
+  , _integrationExpireBehavior    :: Maybe IntegrationExpireBehavior -- ^ the behavior of expiring subscribers
+  , _integrationExpireGracePeriod :: Maybe Int                       -- ^ the grace period (in days) before expiring subscribers
+  , _integrationUser              :: Maybe User                      -- ^ user for this integration
+  , _integrationAccount           :: IntegrationAccount              -- ^ integration account information
+  , _integrationSyncedAt          :: Maybe Text                      -- ^ when this integration was last synced
+  , _integrationSubscriberCount   :: Maybe Int                       -- ^ how many subscribers this integration has
+  , _integrationRevoked           :: Maybe Bool                      -- ^ has this integration been revoked
+  , _integrationApplication       :: Maybe IntegrationApplication    -- ^ The bot/OAuth2 application for discord integrations
+  } deriving stock (Generic, Show)
+instance FromJSON Integration where
+  parseJSON = genericParseJSON $ defaultJSONOptions 12
+instance Receivable Integration
+
+data IntegrationAccount = IntegrationAccount
+  { _integrationAccountId   :: Text -- ^ id of the account
+  , _integrationAccountName :: Text -- ^ name of the account
+  } deriving stock (Generic, Show)
+instance FromJSON IntegrationAccount where
+  parseJSON = genericParseJSON $ defaultJSONOptions 12
+instance Receivable IntegrationAccount
+
+data IntegrationApplication = IntegrationApplication
+  { _integrationApplicationId          :: Snowflake  -- ^ the id of the app
+  , _integrationApplicationName        :: Text       -- ^ the name of the app
+  , _integrationApplicationIcon        :: Maybe Text -- ^ the icon hash of the app
+  , _integrationApplicationDescription :: Text       -- ^ the description of the app
+  , _integrationApplicationSummary     :: Text       -- ^ the description of the app
+  , _integrationApplicationBot         :: Maybe User -- ^ the bot associated with this application
+  } deriving stock (Generic, Show)
+instance FromJSON IntegrationApplication where
+  parseJSON = genericParseJSON $ defaultJSONOptions 12
+instance Receivable IntegrationApplication
+
+data IntegrationExpireBehavior =
+    ExpireRemoveRole
+  | ExpireKick
+  deriving stock (Generic, Show, Enum)
+instance FromJSON IntegrationExpireBehavior where
+  parseJSON (Number 0) = pure ExpireRemoveRole
+  parseJSON (Number 1) = pure ExpireKick
+  parseJSON _ = mzero
+instance Receivable IntegrationExpireBehavior
 
 data Invite = Invite
   { _inviteCode                     :: Text         -- ^ the invite code (unique ID)
